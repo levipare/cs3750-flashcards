@@ -1,0 +1,26 @@
+# Xcode build products & user data
+DerivedData/
+build/
+**/*.xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.moved-aside
+*.xccheckout
+
+# SwiftPM (keep source, ignore local build/meta)
+.build/
+.swiftpm/
+
+# CocoaPods
+Pods/
+# Commit your .xcworkspace and Podfile.lock when using CocoaPods
+
+# Carthage
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/test_output/
+
+# General
+.DS_Store
