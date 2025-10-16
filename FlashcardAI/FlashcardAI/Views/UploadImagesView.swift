@@ -93,7 +93,7 @@ struct UploadImagesView: View {
                         .frame(height: 100)
                     }
                 }
-                .background(Color.black.opacity(0.8))
+                .background(.ultraThinMaterial)
             }
             
             // Success message overlay
