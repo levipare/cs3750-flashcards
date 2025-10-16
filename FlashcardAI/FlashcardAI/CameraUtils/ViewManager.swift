@@ -17,12 +17,11 @@ final class ViewModel {
     var showImagePicker = false
     
     private let cameraManager = CameraManager()
-
+    
     init() {
         cameraManager.start()
-        Task.detached { [weak self] in
-            guard let self else { return }
-            await self.loadFrames()
+        Task {
+            await loadFrames()
         }
     }
     

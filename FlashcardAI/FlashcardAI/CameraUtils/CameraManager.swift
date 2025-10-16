@@ -50,7 +50,6 @@ class CameraManager: NSObject {
     
     override init() {
         super.init()
-        // Don't start automatically
     }
 
     func start() {
@@ -94,17 +93,12 @@ class CameraManager: NSObject {
 
         //For a vertical orientation of the camera stream
         videoOutput.connection(with: .video)?.videoRotationAngle = 90
+        photoOutput.connection(with: .video)?.videoRotationAngle = 90
     }
-    
     
     private func startSession() async {
         guard await isAuthorized else { return }
         captureSession.startRunning()
-    }
-    
-    private func rotate(by angle: CGFloat, from connection: AVCaptureConnection) {
-        guard connection.isVideoRotationAngleSupported(angle) else { return }
-        connection.videoRotationAngle = angle
     }
     
     func capturePhoto() async throws -> UIImage {
@@ -115,19 +109,16 @@ class CameraManager: NSObject {
             photoOutput.capturePhoto(with: photoSettings, delegate: self)
         }
     }
-
 }
 
 extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
     
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard let currentFrame = sampleBuffer.cgImage else {
-            print("Can't translate to CGImage")
             return
         }
         addToPreviewStream?(currentFrame)
     }
-    
 }
 
 extension CameraManager: AVCapturePhotoCaptureDelegate {
