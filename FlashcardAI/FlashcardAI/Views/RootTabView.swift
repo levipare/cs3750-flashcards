@@ -7,30 +7,22 @@
 import SwiftUI
 
 struct RootTabView: View {
-    enum Tab { case home, camera }
+    enum Tab { case home, decks, scan, settings }
     @State private var selection: Tab = .home
-    @EnvironmentObject var authViewModel: AuthViewModel
 
     var body: some View {
-        NavigationStack {
-            TabView(selection: $selection) {
-                SplashView(openCamera: { selection = .camera })
-                    .tabItem { Label("Home", systemImage: "house") }
-                    .tag(Tab.home)
-
-                UploadImagesView()
-                    .tabItem { Label("Camera", systemImage: "camera") }
-                    .tag(Tab.camera)
-            }
-            .navigationTitle("FlashcardAI")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Sign Out") {
-                        authViewModel.signOut()
-                    }
-                    .foregroundColor(.red)
-                }
-            }
+        TabView(selection: $selection) {
+            SplashView(openCamera: { selection = .scan })
+                .tabItem { Label("Home", systemImage: "house") }
+                .tag(Tab.home)
+            DecksView()
+                .tabItem { Label("Decks", systemImage: "square.stack.3d.up") }
+                .tag(Tab.decks)
+            UploadImagesView()
+                .tabItem { Label("Scan", systemImage: "camera") }
+                .tag(Tab.scan)
+            SettingsView()
+                .tabItem { Label("Settings", systemImage: "gearshape") }
         }
     }
 }
