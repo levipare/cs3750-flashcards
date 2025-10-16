@@ -154,6 +154,7 @@ func getPasswordStrength(_ pw: String) -> Int {
     }
 }
 
-#Preview {
-    AuthView().environmentObject(AuthViewModel())
-}
+//#Preview {
+//    ContentView()
+//}
+
