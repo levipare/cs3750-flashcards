@@ -14,7 +14,6 @@ final class ViewModel {
     var currentFrame: CGImage?
     var capturedImages: [UIImage] = []
     var showSuccessMessage = false
-    var showImagePicker = false
     
     private let cameraManager = CameraManager()
     

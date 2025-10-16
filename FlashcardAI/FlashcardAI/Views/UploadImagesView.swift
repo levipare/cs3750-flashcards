@@ -5,11 +5,12 @@
 //  Created by River Bumpas on 10/15/25.
 //
 import SwiftUI
+import PhotosUI
 
 struct UploadImagesView: View {
     
     @State private var viewModel = ViewModel()
-    @State private var selectedLibraryImage: UIImage?
+    @State private var selectedPhotoItem: PhotosPickerItem?
     
     var body: some View {
         ZStack {
@@ -23,9 +24,9 @@ struct UploadImagesView: View {
                     // Control buttons
                     HStack(spacing: 40) {
                         // Upload from library button
-                        Button(action: {
-                            viewModel.showImagePicker = true
-                        }) {
+                        PhotosPicker(selection: $selectedPhotoItem,
+                                     matching: .images,
+                                     photoLibrary: .shared()) {
                             VStack(spacing: 8) {
                                 Image(systemName: "photo.on.rectangle")
                                     .font(.system(size: 30))
@@ -118,13 +119,22 @@ struct UploadImagesView: View {
             }
         }
         .foregroundColor(.white)
-        .sheet(isPresented: $viewModel.showImagePicker) {
-            ImagePicker(image: $selectedLibraryImage)
-        }
-        .onChange(of: selectedLibraryImage) { _, newImage in
-            if let newImage = newImage {
-                viewModel.addImageFromLibrary(newImage)
-                selectedLibraryImage = nil
+        .onChange(of: selectedPhotoItem) { _, newItem in
+            guard let newItem else { return }
+            Task {
+                do {
+                    if let data = try await newItem.loadTransferable(type: Data.self),
+                       let uiImage = UIImage(data: data) {
+                        await MainActor.run {
+                            viewModel.addImageFromLibrary(uiImage)
+                        }
+                    }
+                } catch {
+                    print("Failed to load photo from picker:", error)
+                }
+                await MainActor.run {
+                    selectedPhotoItem = nil
+                }
             }
         }
     }
