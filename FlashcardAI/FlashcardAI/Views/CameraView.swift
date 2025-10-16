@@ -27,6 +27,6 @@ struct CameraView: View {
     }
 }
 
-#Preview {
-    CameraView(image: .constant(nil))
-}
+//#Preview {
+//    CameraView(image: .constant(nil))
+//}

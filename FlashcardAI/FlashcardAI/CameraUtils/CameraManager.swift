@@ -6,7 +6,7 @@
 //
 import AVFoundation
 import CoreImage
-
+import UIKit
 
 class CameraManager: NSObject {
     
@@ -14,10 +14,14 @@ class CameraManager: NSObject {
     private var deviceInput: AVCaptureDeviceInput?
     private var videoOutput: AVCaptureVideoDataOutput?
     private let systemPreferredCamera = AVCaptureDevice.default(for: .video)
+    private let photoOutput = AVCapturePhotoOutput()
 
     private var sessionQueue = DispatchQueue(label: "video.preview.session")
     
     private var addToPreviewStream: ((CGImage) -> Void)?
+    
+    // Photo capture continuation
+    private var photoContinuation: CheckedContinuation<UIImage, Error>?
     
     lazy var previewStream: AsyncStream<CGImage> = {
         AsyncStream { continuation in
@@ -46,12 +50,14 @@ class CameraManager: NSObject {
     
     override init() {
         super.init()
-        
+        // Don't start automatically
+    }
+
+    func start() {
         Task {
             await configureSession()
             await startSession()
         }
-        
     }
     
     private func configureSession() async {
@@ -78,8 +84,13 @@ class CameraManager: NSObject {
             return
         }
         
+        guard captureSession.canAddOutput(photoOutput) else {
+            return
+        }
+        
         captureSession.addInput(deviceInput)
         captureSession.addOutput(videoOutput)
+        captureSession.addOutput(photoOutput)
 
         //For a vertical orientation of the camera stream
         videoOutput.connection(with: .video)?.videoRotationAngle = 90
@@ -95,6 +106,15 @@ class CameraManager: NSObject {
         guard connection.isVideoRotationAngleSupported(angle) else { return }
         connection.videoRotationAngle = angle
     }
+    
+    func capturePhoto() async throws -> UIImage {
+        return try await withCheckedThrowingContinuation { continuation in
+            self.photoContinuation = continuation
+            
+            let photoSettings = AVCapturePhotoSettings()
+            photoOutput.capturePhoto(with: photoSettings, delegate: self)
+        }
+    }
 
 }
 
@@ -109,6 +129,27 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
     }
     
 }
+
+extension CameraManager: AVCapturePhotoCaptureDelegate {
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        if let error = error {
+            photoContinuation?.resume(throwing: error)
+            photoContinuation = nil
+            return
+        }
+        
+        guard let imageData = photo.fileDataRepresentation(),
+              let uiImage = UIImage(data: imageData) else {
+            photoContinuation?.resume(throwing: NSError(domain: "CameraManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create UIImage"]))
+            photoContinuation = nil
+            return
+        }
+        
+        photoContinuation?.resume(returning: uiImage)
+        photoContinuation = nil
+    }
+}
+
 extension CMSampleBuffer {
     var cgImage: CGImage? {
         let pixelBuffer: CVPixelBuffer? = CMSampleBufferGetImageBuffer(self)
