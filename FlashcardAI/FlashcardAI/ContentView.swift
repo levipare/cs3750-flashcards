@@ -6,16 +6,19 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        Text(Auth.auth().currentUser?.email ?? "No user signed in")
+            .padding()
+            .onAppear {
+                if let user = Auth.auth().currentUser {
+                    print("User: \(user.email ?? "none") | UID: \(user.uid)")
+                } else {
+                    print("No user signed in")
+                }
+            }
     }
 }
 
