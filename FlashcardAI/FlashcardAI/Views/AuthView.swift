@@ -1,8 +1,8 @@
 //
-//  ContentView.swift
+//  AuthView.swift
 //  FlashcardAI
 //
-//  Created by River Bumpas on 10/15/25.
+//  Created by Surya Malik on 10/16/25.
 //
 
 import SwiftUI
