@@ -7,20 +7,6 @@
 
 import FirebaseFirestore
 
-struct Flashcard: Identifiable, Codable {
-    @DocumentID var id: String?
-    var frontText: String
-    var backText: String
-    var order: Int
-}
-
-struct Deck: Identifiable, Codable {
-    @DocumentID var id: String?
-    var title: String
-    var ownerID: String
-    var shareCode: String?
-}
-
 class FirestoreManager {
     private let db = Firestore.firestore()
 
@@ -33,5 +19,10 @@ class FirestoreManager {
             .whereField("ownerID", isEqualTo: userID)
             .getDocuments()
         return snapshot.documents.compactMap { try? $0.data(as: Deck.self) }
+    }
+    
+    func fetchCards(for deckID: String) async throws -> [Card] {
+        let snapshot = try await db.collection("decks/\(deckID)/cards").getDocuments()
+        return try snapshot.documents.compactMap { try $0.data(as: Card.self) }
     }
 }
