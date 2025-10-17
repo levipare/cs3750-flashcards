@@ -14,16 +14,36 @@ struct UploadImagesView: View {
     
     var body: some View {
         ZStack {
+            CameraView(image: $viewModel.currentFrame)
+                .ignoresSafeArea()
+
+            LinearGradient(colors: [Color.black.opacity(0.55), Color.clear],
+                           startPoint: .bottom,
+                           endPoint: .top)
+                .ignoresSafeArea()
+
             VStack(spacing: 0) {
-                // Camera preview
-                CameraView(image: $viewModel.currentFrame)
-                    .frame(maxHeight: .infinity)
-                
-                // Bottom controls and image gallery
+                if viewModel.showSuccessMessage {
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.title2)
+                        Text("Image uploaded successfully!")
+                            .foregroundColor(.white)
+                    }
+                    .padding()
+                    .background(Color.black.opacity(0.75))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                    .padding(.top, 60)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
+                Spacer(minLength: 0)
+
                 VStack(spacing: 16) {
-                    // Control buttons
+                    let isCameraUnavailable = viewModel.currentFrame == nil
                     HStack(spacing: 40) {
-                        // Upload from library button
                         PhotosPicker(selection: $selectedPhotoItem,
                                      matching: .images,
                                      photoLibrary: .shared()) {
@@ -33,9 +53,9 @@ struct UploadImagesView: View {
                                 Text("Library")
                                     .font(.caption)
                             }
+                            .shadow(color: .black.opacity(0.6), radius: 6, x: 0, y: 2)
                         }
-                        
-                        // Capture photo button
+
                         Button(action: {
                             viewModel.capturePhoto()
                         }) {
@@ -48,8 +68,10 @@ struct UploadImagesView: View {
                                     .frame(width: 60, height: 60)
                             }
                         }
-                        
-                        // Image count indicator
+                        .shadow(color: .black.opacity(0.6), radius: 8, x: 0, y: 4)
+                        .disabled(isCameraUnavailable)
+                        .opacity(isCameraUnavailable ? 0.5 : 1)
+
                         VStack(spacing: 8) {
                             ZStack {
                                 Circle()
@@ -62,10 +84,10 @@ struct UploadImagesView: View {
                             Text("Images")
                                 .font(.caption)
                         }
+                        .shadow(color: .black.opacity(0.6), radius: 6, x: 0, y: 2)
                     }
                     .padding(.vertical)
-                    
-                    // Thumbnail gallery
+
                     if !viewModel.capturedImages.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
@@ -76,8 +98,7 @@ struct UploadImagesView: View {
                                             .scaledToFill()
                                             .frame(width: 80, height: 80)
                                             .clipShape(RoundedRectangle(cornerRadius: 8))
-                                        
-                                        // Delete button
+
                                         Button(action: {
                                             viewModel.removeImage(at: index)
                                         }) {
@@ -89,36 +110,31 @@ struct UploadImagesView: View {
                                     }
                                 }
                             }
-                            .padding(.horizontal)
                         }
                         .frame(height: 100)
                     }
                 }
-                .background(.ultraThinMaterial)
+                .padding(.horizontal)
+                .padding(.bottom, 32)
             }
-            
-            // Success message overlay
-            if viewModel.showSuccessMessage {
-                VStack {
-                    HStack(spacing: 12) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                            .font(.title2)
-                        Text("Image uploaded successfully!")
-                            .foregroundColor(.white)
-                    }
-                    .padding()
-                    .background(Color.black.opacity(0.8))
-                    .cornerRadius(12)
-                    .padding(.top, 50)
-                    
-                    Spacer()
-                }
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .animation(.spring(), value: viewModel.showSuccessMessage)
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.spring(), value: viewModel.showSuccessMessage)
         }
         .foregroundColor(.white)
+        .alert("Camera unavailable", isPresented: Binding(
+            get: { viewModel.cameraErrorMessage != nil },
+            set: { newValue in
+                if !newValue {
+                    viewModel.cameraErrorMessage = nil
+                }
+            }
+        )) {
+            Button("OK", role: .cancel) {
+                viewModel.cameraErrorMessage = nil
+            }
+        } message: {
+            Text(viewModel.cameraErrorMessage ?? "Please try again.")
+        }
         .onChange(of: selectedPhotoItem) { _, newItem in
             guard let newItem else { return }
             Task {
