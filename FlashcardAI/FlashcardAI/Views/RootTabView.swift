@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct RootTabView: View {
+    @StateObject var settings : Settings = Settings()
+    
     var body: some View {
         TabView {
             Tab("Home", systemImage: "house") {
@@ -23,8 +25,8 @@ struct RootTabView: View {
             }
             
             Tab("Settings", systemImage: "gearshape") {
-                SettingsView()
+                SettingsView().environmentObject(settings)
             }
-        }
+        }.environment(\.colorScheme, settings.colorScheme)
     }
 }

@@ -9,11 +9,19 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @EnvironmentObject var settings: Settings
     
     var body: some View {
-        Button("Sign Out") {
-            authViewModel.signOut()
+        VStack{
+            Spacer()
+            Toggle(isOn: $settings.darkModeToggleState)
+            {Text("Dark Mode")}.padding()
+            Spacer()
+            Button("Sign Out") {
+                authViewModel.signOut()
+            }
+            .foregroundColor(.red)
+            Spacer()
         }
-        .foregroundColor(.red)
     }
 }
