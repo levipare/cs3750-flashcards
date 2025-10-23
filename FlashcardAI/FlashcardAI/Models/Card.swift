@@ -9,7 +9,6 @@ import FirebaseFirestore
 
 struct Card: Identifiable, Codable {
     @DocumentID var id: String?
-    var frontText: String
-    var backText: String
-    var order: Int
+    var front: String
+    var back: String
 }
