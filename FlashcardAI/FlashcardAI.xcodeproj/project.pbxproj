@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		13730F262EB27FAA00D7F324 /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13730F252EB27FAA00D7F324 /* Secrets.swift */; };
 		13775C992EA134F9009ADF5C /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 13775C982EA134F9009ADF5C /* FirebaseAuth */; };
 		13775C9B2EA134F9009ADF5C /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 13775C9A2EA134F9009ADF5C /* FirebaseFirestore */; };
 		13775C9D2EA134F9009ADF5C /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 13775C9C2EA134F9009ADF5C /* FirebaseStorage */; };
@@ -30,6 +31,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		13730F252EB27FAA00D7F324 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
+		13730F272EB2849600D7F324 /* Untitled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Untitled.swift; sourceTree = "<group>"; };
 		13775C3C2EA06A4D009ADF5C /* FlashcardAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlashcardAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13775C492EA06A4F009ADF5C /* FlashcardAITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FlashcardAITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		13775C532EA06A4F009ADF5C /* FlashcardAIUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FlashcardAIUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -84,6 +87,8 @@
 		13775C332EA06A4D009ADF5C = {
 			isa = PBXGroup;
 			children = (
+				13730F272EB2849600D7F324 /* Untitled.swift */,
+				13730F252EB27FAA00D7F324 /* Secrets.swift */,
 				13775C3E2EA06A4D009ADF5C /* FlashcardAI */,
 				13775C4C2EA06A4F009ADF5C /* FlashcardAITests */,
 				13775C562EA06A4F009ADF5C /* FlashcardAIUITests */,
@@ -251,6 +256,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				13730F262EB27FAA00D7F324 /* Secrets.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

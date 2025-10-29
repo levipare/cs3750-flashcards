@@ -27,6 +27,9 @@ struct RootTabView: View {
             Tab("Settings", systemImage: "gearshape") {
                 SettingsView().environmentObject(settings)
             }
+            Tab("Chat", systemImage: "bird") {
+                ChatView()
+            }
         }.environment(\.colorScheme, settings.colorScheme)
     }
 }
