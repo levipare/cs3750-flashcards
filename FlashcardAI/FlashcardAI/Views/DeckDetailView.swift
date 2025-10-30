@@ -32,8 +32,6 @@ struct DeckDetailView: View {
             ForEach(viewModel.cards) { card in
                 Button {
                     selectedCard = card
-                    editFrontText = card.front
-                    editBackText = card.back
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(card.front)
@@ -84,8 +82,6 @@ struct DeckDetailView: View {
                 Spacer()
                 Button {
                     showingNewCardSheet = true
-                    newCardFront = ""
-                    newCardBack = ""
                 } label: {
                     Image(systemName: "plus")
                 }
@@ -98,9 +94,13 @@ struct DeckDetailView: View {
                 Form {
                     Section(header: Text("Front")) {
                         TextEditor(text: $editFrontText).frame(minHeight: 100)
+                    }.onAppear {
+                        editFrontText = card.front
                     }
                     Section(header: Text("Back")) {
                         TextEditor(text: $editBackText).frame(minHeight: 100)
+                    }.onAppear {
+                        editBackText = card.back
                     }
                 }
                 .navigationTitle("Edit Card")
@@ -134,10 +134,14 @@ struct DeckDetailView: View {
             NavigationStack {
                 Form {
                     Section(header: Text("Front")) {
-                        TextEditor(text: $newCardFront).frame(minHeight: 100)
+                        TextEditor(text: $newCardFront).frame(minHeight: 100).onAppear {
+                            newCardFront = ""
+                        }
                     }
                     Section(header: Text("Back")) {
-                        TextEditor(text: $newCardBack).frame(minHeight: 100)
+                        TextEditor(text: $newCardBack).frame(minHeight: 100).onAppear {
+                            newCardBack = ""
+                        }
                     }
                 }
                 .navigationTitle("New Card")
