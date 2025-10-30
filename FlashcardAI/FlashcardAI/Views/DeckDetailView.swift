@@ -10,7 +10,7 @@ import SwiftUI
 
 struct DeckDetailView: View {
     @ObservedObject var decksViewModel: DecksViewModel
-    @StateObject private var viewModel = CardsViewModel()
+    @StateObject private var viewModel : CardsViewModel
     @State private var selectedCard: Card? = nil
     @State private var showingNewCardSheet = false
     @State private var newCardFront = ""
@@ -18,45 +18,25 @@ struct DeckDetailView: View {
     @State private var editFrontText = ""
     @State private var editBackText = ""
     @State private var title: String
+    @State private var showConfirmation = false
 
     let deck: Deck
 
     init(deck: Deck, decksViewModel: DecksViewModel) {
         self.deck = deck
         self._title = State(initialValue: deck.title)
+        self._viewModel = StateObject(wrappedValue: CardsViewModel(deckID: deck.id ?? ""))
         self._decksViewModel = ObservedObject(initialValue: decksViewModel)
     }
 
     var body: some View {
         List {
             ForEach(viewModel.cards) { card in
-                Button {
-                    selectedCard = card
-                } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(card.front)
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                        Text(card.back)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding()
-                }
-            }.onDelete { indexSet in
-                Task {
-                    for index in indexSet {
-                        let card = viewModel.cards[index]
-                        await viewModel.deleteCard(
-                            cardID: card.id ?? "",
-                            deckID: deck.id ?? ""
-                        )
-                    }
-                }
+                cardRow(card: card)
             }
         }
         .task {
-            await viewModel.fetchCards(deckID: deck.id ?? "")
+            await viewModel.fetchCards()
         }
         .overlay {
             if viewModel.cards.isEmpty {
@@ -88,83 +68,120 @@ struct DeckDetailView: View {
                 .labelStyle(.iconOnly)
             }
         }
-        // Edit card sheet
         .sheet(item: $selectedCard) { card in
-            NavigationStack {
-                Form {
-                    Section(header: Text("Front")) {
-                        TextEditor(text: $editFrontText).frame(minHeight: 100)
-                    }.onAppear {
-                        editFrontText = card.front
-                    }
-                    Section(header: Text("Back")) {
-                        TextEditor(text: $editBackText).frame(minHeight: 100)
-                    }.onAppear {
-                        editBackText = card.back
+            editCardSheet(card: card)
+        }
+        .sheet(isPresented: $showingNewCardSheet) {
+            newCardSheet()
+        }
+    }
+    
+    private func editCardSheet(card: Card) -> some View {
+        NavigationStack {
+            Form {
+                Section(header: Text("Front")) {
+                    TextEditor(text: $editFrontText).frame(minHeight: 100)
+                }.onAppear {
+                    editFrontText = card.front
+                }
+                Section(header: Text("Back")) {
+                    TextEditor(text: $editBackText).frame(minHeight: 100)
+                }.onAppear {
+                    editBackText = card.back
+                }
+            }
+            .navigationTitle("Edit Card")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        selectedCard = nil
                     }
                 }
-                .navigationTitle("Edit Card")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        Task {
+                            await viewModel.updateCard(
+                                cardID: card.id ?? "",
+                                front: editFrontText,
+                                back: editBackText
+                            )
                             selectedCard = nil
                         }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
-                            Task {
-                                await viewModel.updateCard(
-                                    deckID: deck.id ?? "",
-                                    cardID: card.id ?? "",
-                                    front: editFrontText,
-                                    back: editBackText
-                                )
-                                selectedCard = nil
-                            }
-                        }.disabled(
-                            editFrontText.isEmpty || editBackText.isEmpty
-                        )
-                    }
+                    }.disabled(
+                        editFrontText.isEmpty || editBackText.isEmpty
+                    )
                 }
             }
         }
-        // New card sheet
-        .sheet(isPresented: $showingNewCardSheet) {
-            NavigationStack {
-                Form {
-                    Section(header: Text("Front")) {
-                        TextEditor(text: $newCardFront).frame(minHeight: 100).onAppear {
-                            newCardFront = ""
-                        }
-                    }
-                    Section(header: Text("Back")) {
-                        TextEditor(text: $newCardBack).frame(minHeight: 100).onAppear {
-                            newCardBack = ""
-                        }
+    }
+    
+    private func newCardSheet() -> some View {
+        NavigationStack {
+            Form {
+                Section(header: Text("Front")) {
+                    TextEditor(text: $newCardFront).frame(minHeight: 100).onAppear {
+                        newCardFront = ""
                     }
                 }
-                .navigationTitle("New Card")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
+                Section(header: Text("Back")) {
+                    TextEditor(text: $newCardBack).frame(minHeight: 100).onAppear {
+                        newCardBack = ""
+                    }
+                }
+            }
+            .navigationTitle("New Card")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        showingNewCardSheet = false
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        Task {
+                            await viewModel.addCard(
+                                front: newCardFront,
+                                back: newCardBack
+                            )
                             showingNewCardSheet = false
                         }
                     }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") {
-                            Task {
-                                await viewModel.addCard(
-                                    deckID: deck.id ?? "",
-                                    front: newCardFront,
-                                    back: newCardBack
-                                )
-                                showingNewCardSheet = false
-                            }
-                        }
-                        .disabled(newCardFront.isEmpty || newCardBack.isEmpty)
-                    }
+                    .disabled(newCardFront.isEmpty || newCardBack.isEmpty)
+                }
+            }
+        }
+    }
+    
+    private func cardRow(card: Card) -> some View {
+        Button {
+            selectedCard = card
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(card.front)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Text(card.back)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+        }.swipeActions {
+            Button {
+                showConfirmation = true
+            } label: {
+                Image(systemName: "trash")
+            }.tint(.red)
+        }
+        .confirmationDialog(
+            "Are you sure?",
+            isPresented: $showConfirmation,
+            titleVisibility: .visible,
+        ) {
+            Button("Delete Card", role: .destructive) {
+                Task {
+                    await viewModel.deleteCard(cardID: card.id ?? "")
                 }
             }
         }

@@ -12,9 +12,14 @@ import FirebaseFirestore
 class CardsViewModel: ObservableObject {
     @Published var cards: [Card] = []
     private let db = Firestore.firestore()
+    private let deckID : String
+    
+    init(deckID: String) {
+        self.deckID = deckID
+    }
 
     /// Fetch all cards for a given deck
-    func fetchCards(deckID: String) async {
+    func fetchCards() async {
         do {
             let snapshot = try await db.collection("decks")
                 .document(deckID)
@@ -30,7 +35,7 @@ class CardsViewModel: ObservableObject {
     }
 
     /// Add a new card to a deck
-    func addCard(deckID: String, front: String, back: String) async {
+    func addCard(front: String, back: String) async {
         do {
             let card = Card(front: front, back: back)
             _ = try db.collection("decks")
@@ -38,14 +43,14 @@ class CardsViewModel: ObservableObject {
                 .collection("cards")
                 .addDocument(from: card)
             
-            await fetchCards(deckID: deckID)
+            await fetchCards()
         } catch {
             print("Error adding card: \(error.localizedDescription)")
         }
     }
 
     /// Delete a card by ID
-    func deleteCard(cardID: String, deckID: String) async {
+    func deleteCard(cardID: String) async {
         do {
             try await db.collection("decks")
                 .document(deckID)
@@ -59,7 +64,7 @@ class CardsViewModel: ObservableObject {
     }
     
     /// Update an existing card's front and back
-    func updateCard(deckID: String, cardID: String, front: String, back: String) async {
+    func updateCard(cardID: String, front: String, back: String) async {
         do {
             try await db.collection("decks")
                 .document(deckID)

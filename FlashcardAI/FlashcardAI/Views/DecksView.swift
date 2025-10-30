@@ -11,28 +11,13 @@ import SwiftUI
 
 struct DecksView: View {
     @StateObject private var viewModel = DecksViewModel()
+    @State private var showConfirmation = false
 
     var body: some View {
         NavigationStack {
             List {
                 ForEach(viewModel.decks) { deck in
-                    NavigationLink(destination: DeckDetailView(deck: deck, decksViewModel: viewModel)) {
-                        VStack(alignment: .leading) {
-                            Text(deck.title)
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            Text("\(deck.cardCount) cards")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }.onDelete { indexSet in
-                    Task {
-                        for index in indexSet {
-                            let deck = viewModel.decks[index]
-                            await viewModel.deleteDeck(deckID: deck.id ?? "")
-                        }
-                    }
+                    deckRow(deck: deck)
                 }
             }
             .navigationTitle("Decks")
@@ -88,4 +73,41 @@ struct DecksView: View {
             }
         }
     }
+    
+    private func deckRow(deck: Deck) -> some View {
+           NavigationLink(
+               destination: DeckDetailView(
+                   deck: deck,
+                   decksViewModel: viewModel
+               )
+           ) {
+               VStack(alignment: .leading) {
+                   Text(deck.title)
+                       .font(.headline)
+                       .foregroundColor(.primary)
+
+                   Text("\(deck.cardCount) cards")
+                       .font(.subheadline)
+                       .foregroundColor(.secondary)
+               }
+           }
+           .swipeActions {
+               Button {
+                   showConfirmation = true
+               } label: {
+                   Image(systemName: "trash")
+               }.tint(.red)
+           }
+           .confirmationDialog(
+               "Are you sure?",
+               isPresented: $showConfirmation,
+               titleVisibility: .visible,
+           ) {
+               Button("Delete Deck", role: .destructive) {
+                   Task {
+                       await viewModel.deleteDeck(deckID: deck.id ?? "")
+                   }
+               }
+           }
+       }
 }
