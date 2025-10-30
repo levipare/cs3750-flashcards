@@ -23,7 +23,7 @@ struct FlashcardAIApp: App {
                 RootTabView()
                     .environmentObject(authViewModel)
             } else {
-                AuthView()
+                SignUpView()
                     .environmentObject(authViewModel)
             }
         }

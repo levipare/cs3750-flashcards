@@ -81,7 +81,7 @@ class AuthViewModel: ObservableObject {
         self.userProfile = profile
     }
 
-    private func fetchUserProfile(for uid: String) async {
+    func fetchUserProfile(for uid: String) async {
         do {
             let snapshot = try await db.collection("users").document(uid).getDocument()
             self.userProfile = try snapshot.data(as: UserProfile.self)

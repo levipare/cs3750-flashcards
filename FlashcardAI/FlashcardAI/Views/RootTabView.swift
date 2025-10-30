@@ -9,6 +9,7 @@ import SwiftUI
 
 struct RootTabView: View {
     @StateObject var settings : Settings = Settings()
+    @EnvironmentObject var authViewModel : AuthViewModel
     
     var body: some View {
         TabView {
@@ -25,7 +26,7 @@ struct RootTabView: View {
             }
             
             Tab("Settings", systemImage: "gearshape") {
-                SettingsView().environmentObject(settings)
+                SettingsView().environmentObject(settings).environmentObject(authViewModel)
             }
             Tab("Chat", systemImage: "bird") {
                 ChatView()

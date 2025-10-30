@@ -14,8 +14,10 @@ class Settings : ObservableObject {
             colorScheme = darkModeToggleState ? .dark : .light
         }
     }
+    @Published var showAccountView : Bool
     
     init() {
-        darkModeToggleState = false;
+        darkModeToggleState = false
+        showAccountView = false
     }
 }
