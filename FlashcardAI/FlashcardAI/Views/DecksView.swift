@@ -14,59 +14,78 @@ struct DecksView: View {
 
     var body: some View {
         NavigationStack {
-            List(viewModel.decks) { deck in
-                DeckEntry(deck: deck)
+            List {
+                ForEach(viewModel.decks) { deck in
+                    NavigationLink(destination: DeckDetailView(deck: deck, decksViewModel: viewModel)) {
+                        VStack(alignment: .leading) {
+                            Text(deck.title)
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            Text("\(deck.cardCount) cards")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }.onDelete { indexSet in
+                    Task {
+                        for index in indexSet {
+                            let deck = viewModel.decks[index]
+                            await viewModel.deleteDeck(deckID: deck.id ?? "")
+                        }
+                    }
+                }
             }
-            .navigationTitle("My Decks")
-        }.task {
-            await viewModel.fetchDecks(for: Auth.auth().currentUser?.uid ?? "")
-        }
-    }
-}
+            .navigationTitle("Decks")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(destination: SettingsView()) {
+                        Label("Settings", systemImage: "gearshape.fill")
+                            .labelStyle(.iconOnly)
+                    }
+                }
 
-struct DeckEntry: View {
-    let deck: Deck
+                ToolbarItemGroup(placement: .bottomBar) {
+                    Spacer()
+                    Menu {
 
-    var body: some View {
-        NavigationLink(destination: DeckDetailView(deck: deck)) {
-            VStack(alignment: .leading) {
-                Text(deck.title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                Text("\(deck.cardCount) cards")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                        NavigationLink(
+                            "Deck From Images",
+                            destination: UploadImagesView()
+                        )
+                        Button("Empty Deck") {
+                            Task {
+                                await viewModel.addDeck(
+                                    title: "Untitled Deck",
+                                    ownerID: Auth.auth().currentUser?.uid ?? "",
+                                    cardCount: 0
+                                )
+                            }
+                        }
+                        Button("Enter Share Code", action: {})
+                    } label: {
+                        Label("New Deck", systemImage: "plus")
+                            .labelStyle(.iconOnly)
+                    }.menuOrder(.fixed)
+                }
             }
-        }
-    }
-}
-
-struct DeckDetailView: View {
-    @StateObject private var viewModel = CardsViewModel()
-    let deck: Deck
-
-    var body: some View {
-        List(viewModel.cards) { card in
-            VStack(alignment: .leading, spacing: 8) {
-                Text(card.front)
-                    .font(.headline)
-                Text(card.back)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+            .overlay {
+                if viewModel.decks.isEmpty {
+                    VStack {
+                        Image(systemName: "square.stack.3d.up.fill").font(
+                            .system(size: 48)
+                        ).foregroundStyle(.gray)
+                        Text("No Decks").font(.title.bold()).foregroundStyle(
+                            .gray
+                        )
+                    }
+                }
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
-        }
-        .listStyle(.plain)
-        .navigationTitle(deck.title)
-        .navigationBarTitleDisplayMode(.inline)
-        .background(Color(.systemGroupedBackground))
-        .task {
-            await viewModel.fetchCards(for: deck.id ?? "")
+            .task {
+                await viewModel.fetchDecks(
+                    for: Auth.auth().currentUser?.uid ?? ""
+                )
+            }
         }
     }
 }

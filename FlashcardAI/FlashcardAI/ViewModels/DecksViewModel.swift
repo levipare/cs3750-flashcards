@@ -40,13 +40,30 @@ class DecksViewModel: ObservableObject {
     }
 
     /// Delete a deck by ID
-    func deleteDeck(_ deck: Deck) async {
-        guard let id = deck.id else { return }
+    func deleteDeck(deckID: String) async {
         do {
-            try await db.collection("decks").document(id).delete()
-            decks.removeAll { $0.id == id }
+            try await db.collection("decks").document(deckID).delete()
+            decks.removeAll { $0.id == deckID }
         } catch {
             print("Error deleting deck: \(error.localizedDescription)")
+        }
+    }
+    
+    /// Update an existing deck
+    func updateDeckTitle(deckID: String, title: String) async {
+        do {
+            try await db.collection("decks")
+                .document(deckID)
+                .updateData([
+                    "title": title,
+                ])
+            
+            // Update locally
+            if let index = decks.firstIndex(where: { $0.id == deckID }) {
+                decks[index].title = title
+            }
+        } catch {
+            print("Error updating deck title: \(error.localizedDescription)")
         }
     }
 }

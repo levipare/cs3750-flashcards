@@ -15,7 +15,6 @@ struct SettingsView: View {
         VStack {
             Spacer().frame(height: 40)
 
-        
             Toggle(isOn: $settings.darkModeToggleState) {
                 Text("Dark Mode")
                     .font(.headline)
@@ -42,6 +41,6 @@ struct SettingsView: View {
         }
         .background(Color(.systemBackground))
         .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
-
