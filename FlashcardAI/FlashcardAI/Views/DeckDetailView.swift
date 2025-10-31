@@ -40,14 +40,7 @@ struct DeckDetailView: View {
         }
         .overlay {
             if viewModel.cards.isEmpty {
-                VStack {
-                    Image(systemName: "text.page.fill")
-                        .font(.system(size: 48))
-                        .foregroundStyle(.gray)
-                    Text("No Cards")
-                        .font(.title.bold())
-                        .foregroundStyle(.gray)
-                }
+                ContentUnavailableView("No Cards", systemImage: "text.page.fill", description: Text("Create cards by using the '+' in the lower right."))
             }
         }
         .navigationTitle($title)
@@ -60,10 +53,12 @@ struct DeckDetailView: View {
         .toolbar {
             ToolbarItemGroup(placement: .bottomBar) {
                 Spacer()
-                Button {
+                NavigationLink("Study", destination: {})
+                    .buttonStyle(.borderedProminent)
+                    .disabled(viewModel.cards.isEmpty)
+                Spacer()
+                Button("New Card", systemImage: "plus") {
                     showingNewCardSheet = true
-                } label: {
-                    Image(systemName: "plus")
                 }
                 .labelStyle(.iconOnly)
             }
