@@ -9,7 +9,6 @@ import Foundation
 import FirebaseAuth
 import FirebaseFirestore
 
-@MainActor
 class AuthViewModel: ObservableObject {
     @Published var user: User?
     @Published var userProfile: UserProfile?
@@ -30,7 +29,9 @@ class AuthViewModel: ObservableObject {
                 if let user = user {
                     await self.fetchUserProfile(for: user.uid)
                 } else {
-                    self.userProfile = nil
+                    await MainActor.run {
+                        self.userProfile = nil
+                    }
                 }
             }
         }
@@ -44,7 +45,9 @@ class AuthViewModel: ObservableObject {
         let result = try await Auth.auth().createUser(withEmail: email, password: password)
         let user = result.user
         try await saveUserProfile(for: user, displayName: displayName)
-        self.user = user
+        await MainActor.run {
+            self.user = user
+        }
     }
 
     func signIn(email: String, password: String) async throws {
@@ -78,13 +81,17 @@ class AuthViewModel: ObservableObject {
             deckCount: 0
         )
         try db.collection("users").document(user.uid).setData(from: profile)
-        self.userProfile = profile
+        await MainActor.run {
+            self.userProfile = profile
+        }
     }
 
     private func fetchUserProfile(for uid: String) async {
         do {
             let snapshot = try await db.collection("users").document(uid).getDocument()
-            self.userProfile = try snapshot.data(as: UserProfile.self)
+            try await MainActor.run {
+                self.userProfile = try snapshot.data(as: UserProfile.self)
+            }
         } catch {
             print("Failed to fetch profile:", error.localizedDescription)
         }

@@ -5,15 +5,14 @@
 //  Created by Levi Pare on 10/22/25.
 //
 
-import Foundation
 import FirebaseFirestore
+import Foundation
 
-@MainActor
 class CardsViewModel: ObservableObject {
     @Published var cards: [Card] = []
     private let db = Firestore.firestore()
-    private let deckID : String
-    
+    private let deckID: String
+
     init(deckID: String) {
         self.deckID = deckID
     }
@@ -25,9 +24,10 @@ class CardsViewModel: ObservableObject {
                 .document(deckID)
                 .collection("cards")
                 .getDocuments()
-            
-            self.cards = try snapshot.documents.compactMap { doc in
-                try doc.data(as: Card.self)
+            try await MainActor.run {
+                self.cards = try snapshot.documents.compactMap { doc in
+                    try doc.data(as: Card.self)
+                }
             }
         } catch {
             print("Error fetching cards: \(error.localizedDescription)")
@@ -42,7 +42,7 @@ class CardsViewModel: ObservableObject {
                 .document(deckID)
                 .collection("cards")
                 .addDocument(from: card)
-            
+
             await fetchCards()
         } catch {
             print("Error adding card: \(error.localizedDescription)")
@@ -57,12 +57,14 @@ class CardsViewModel: ObservableObject {
                 .collection("cards")
                 .document(cardID)
                 .delete()
-            cards.removeAll { $0.id == cardID }
+            await MainActor.run {
+                cards.removeAll { $0.id == cardID }
+            }
         } catch {
             print("Error deleting card: \(error.localizedDescription)")
         }
     }
-    
+
     /// Update an existing card's front and back
     func updateCard(cardID: String, front: String, back: String) async {
         do {
@@ -72,13 +74,13 @@ class CardsViewModel: ObservableObject {
                 .document(cardID)
                 .updateData([
                     "front": front,
-                    "back": back
+                    "back": back,
                 ])
-            
-            // Update locally
-            if let index = cards.firstIndex(where: { $0.id == cardID }) {
-                cards[index].front = front
-                cards[index].back = back
+            await MainActor.run {
+                if let index = cards.firstIndex(where: { $0.id == cardID }) {
+                    cards[index].front = front
+                    cards[index].back = back
+                }
             }
         } catch {
             print("Error updating card: \(error.localizedDescription)")
