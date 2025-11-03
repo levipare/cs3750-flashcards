@@ -38,6 +38,7 @@ struct DeckDetailView: View {
         .task {
             await viewModel.fetchCards()
         }
+        .listStyle(.plain)
         .overlay {
             if viewModel.cards.isEmpty {
                 ContentUnavailableView("No Cards", systemImage: "text.page.fill", description: Text("Create cards by using the '+' in the lower right."))
@@ -51,6 +52,9 @@ struct DeckDetailView: View {
             }
         }
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Text("\(viewModel.cards.count) \(viewModel.cards.count == 1 ? "card" : "cards")")
+            }
             ToolbarItemGroup(placement: .bottomBar) {
                 Spacer()
                 NavigationLink("Study", destination: {})
