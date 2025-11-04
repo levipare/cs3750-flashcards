@@ -15,11 +15,43 @@ struct UploadNotesView: View {
     @State private var images: [UIImage] = []
     @State private var showScanner = false
     @State private var inputText = ""
+    @State private var isExtracting = false
+    @State private var progressCompleted = 0
+    @State private var progressTotal = 0
+    @State private var isCleaningText = false
 
     private let ocrManager = OCRManager()
+    private let llmService = OpenRouterService(apiKey: Secrets.openRouterAPIKey)
     
     var body: some View {
-        TextEditor(text: $inputText)
+        ZStack {
+            TextEditor(text: $inputText)
+                .disabled(isExtracting || isCleaningText)
+            
+            if isExtracting {
+                VStack(spacing: 12) {
+                    ProgressView(value: progressTotal == 0 ? 0 : Double(progressCompleted) / Double(progressTotal))
+                        .progressViewStyle(.linear)
+                        .frame(width: 220)
+                    Text("Extracting text from \(progressCompleted)/\(progressTotal) images…")
+                        .font(.footnote)
+                }
+                .padding()
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            
+            if isCleaningText {
+                VStack(spacing: 12) {
+                    ProgressView()
+                    Text("Cleaning up extracted text…")
+                        .font(.footnote)
+                }
+                .padding()
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
         .navigationTitle("Upload Notes")
         .toolbar {
             ToolbarItemGroup(placement: .bottomBar) {
@@ -31,13 +63,19 @@ struct UploadNotesView: View {
                     Image(systemName: "photo.on.rectangle.angled")
                 }.onChange(of: selectedPhotoItems) { _, newItems in
                     Task {
+                        var newImages: [UIImage] = []
                         for item in selectedPhotoItems {
                             if let data = try? await item.loadTransferable(type: Data.self),
                               let image = UIImage(data: data) {
-                               images.append(image)
+                               newImages.append(image)
                            }
                         }
                         selectedPhotoItems = []
+                        
+                        if !newImages.isEmpty {
+                            images.append(contentsOf: newImages)
+                            await extractText(from: newImages)
+                        }
                     }
                 }
                 Spacer()
@@ -57,10 +95,11 @@ struct UploadNotesView: View {
                     showScanner = false
                 },
                 onImages: { imgs in
-                    for img in imgs {
-                        images.append(img)
-                    }
+                    images.append(contentsOf: imgs)
                     showScanner = false
+                    Task {
+                        await extractText(from: imgs)
+                    }
                 },
                 onFailure: { error in
                     // TODO show error message
@@ -68,6 +107,84 @@ struct UploadNotesView: View {
                 }
             )
         }
+    }
+    
+    private func extractText(from newImages: [UIImage]) async {
+        guard !newImages.isEmpty else { return }
+        
+        await MainActor.run {
+            isExtracting = true
+            progressCompleted = 0
+            progressTotal = newImages.count
+        }
+        
+        let pairs: [(UUID, UIImage)] = newImages.map { (UUID(), $0) }
+        let dict = await ocrManager.recognize(images: pairs) { prog in
+            Task { @MainActor in
+                self.progressCompleted = prog.completed
+                self.progressTotal = prog.total
+            }
+        }
+        
+        let ordered = pairs.compactMap { pair in dict[pair.0]?.text }
+        let extractedText = ordered.joined(separator: "\n\n")
+        
+        await MainActor.run {
+            isExtracting = false
+        }
+        
+        // Clean up the OCR text with LLM
+        guard !extractedText.isEmpty else { return }
+        
+        await MainActor.run {
+            isCleaningText = true
+        }
+        
+        do {
+            let cleanedText = try await cleanOCRText(extractedText)
+            
+            await MainActor.run {
+                if !inputText.isEmpty && !cleanedText.isEmpty {
+                    inputText += "\n\n" + cleanedText
+                } else {
+                    inputText = cleanedText
+                }
+                isCleaningText = false
+            }
+        } catch {
+            // If LLM cleanup fails, fall back to raw OCR text
+            print("LLM cleanup failed: \(error.localizedDescription)")
+            await MainActor.run {
+                if !inputText.isEmpty && !extractedText.isEmpty {
+                    inputText += "\n\n" + extractedText
+                } else {
+                    inputText = extractedText
+                }
+                isCleaningText = false
+            }
+        }
+    }
+    
+    private func cleanOCRText(_ rawText: String) async throws -> String {
+        let prompt = """
+        You are a text cleanup assistant. I have extracted text from images using OCR, but it may contain errors, formatting issues, or unclear sections.
+        
+        Please clean up the following text by:
+        1. Fixing obvious OCR errors (misread characters, spacing issues)
+        2. Correcting grammar and punctuation where needed
+        3. Organizing the content into clear paragraphs or bullet points if appropriate
+        4. Removing any duplicate lines or irrelevant artifacts
+        5. Preserving all important information, facts, and technical terms
+        6. Maintaining the original structure and intent of the content
+        
+        Return ONLY the cleaned text, without any commentary or explanations.
+        
+        OCR Text to clean:
+        
+        \(rawText)
+        """
+        
+        return try await llmService.sendMessage(prompt: prompt)
     }
 }
 
