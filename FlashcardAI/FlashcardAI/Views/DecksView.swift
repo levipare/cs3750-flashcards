@@ -100,7 +100,7 @@ struct DecksView: View {
                     .font(.headline)
                     .foregroundColor(.primary)
 
-                Text("\(deck.cardCount) cards")
+                Text("\(deck.cardCount) \(deck.cardCount == 1 ? "card" : "cards")")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }

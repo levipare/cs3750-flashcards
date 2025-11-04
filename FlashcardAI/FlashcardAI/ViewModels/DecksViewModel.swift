@@ -74,4 +74,23 @@ class DecksViewModel: ObservableObject {
             print("Error updating deck title: \(error.localizedDescription)")
         }
     }
+
+    /// Update the card count for a deck
+    func updateCardCount(deckID: String, cardCount: Int) async {
+        do {
+            try await db.collection("decks")
+                .document(deckID)
+                .updateData([
+                    "cardCount": cardCount
+                ])
+
+            await MainActor.run {
+                if let index = decks.firstIndex(where: { $0.id == deckID }) {
+                    decks[index].cardCount = cardCount
+                }
+            }
+        } catch {
+            print("Error updating card count: \(error.localizedDescription)")
+        }
+    }
 }

@@ -25,7 +25,7 @@ struct DeckDetailView: View {
     init(deck: Deck, decksViewModel: DecksViewModel) {
         self.deck = deck
         self._title = State(initialValue: deck.title)
-        self._viewModel = StateObject(wrappedValue: CardsViewModel(deckID: deck.id ?? ""))
+        self._viewModel = StateObject(wrappedValue: CardsViewModel(deckID: deck.id ?? "", decksViewModel: decksViewModel))
         self._decksViewModel = ObservedObject(initialValue: decksViewModel)
     }
 
