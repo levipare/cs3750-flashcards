@@ -19,6 +19,11 @@ struct UploadNotesView: View {
     @State private var progressCompleted = 0
     @State private var progressTotal = 0
     @State private var isCleaningText = false
+    @State private var isGeneratingQuestions = false
+    @State private var showQuestionTypePicker = false
+    @State private var showGenerationResult = false
+    @State private var generationResult = ""
+    @State private var generationError: String?
 
     private let ocrManager = OCRManager()
     private let llmService = OpenRouterService(apiKey: Secrets.openRouterAPIKey)
@@ -46,6 +51,17 @@ struct UploadNotesView: View {
                 VStack(spacing: 12) {
                     ProgressView()
                     Text("Cleaning up extracted text…")
+                        .font(.footnote)
+                }
+                .padding()
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            
+            if isGeneratingQuestions {
+                VStack(spacing: 12) {
+                    ProgressView()
+                    Text("Generating questions…")
                         .font(.footnote)
                 }
                 .padding()
@@ -81,6 +97,7 @@ struct UploadNotesView: View {
                 }
                 Spacer()
                 Button("Generate") {
+                    showQuestionTypePicker = true
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(inputText.isEmpty)
@@ -107,6 +124,49 @@ struct UploadNotesView: View {
                     showScanner = false
                 }
             )
+        }
+        .confirmationDialog(
+            "Select question type",
+            isPresented: $showQuestionTypePicker,
+            titleVisibility: .visible
+        ) {
+            ForEach(QuestionType.allCases) { type in
+                Button(type.displayName) {
+                    Task {
+                        await generateQuestions(for: type)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: $showGenerationResult) {
+            NavigationView {
+                ScrollView {
+                    Text(generationResult)
+                        .font(.system(.body, design: .monospaced))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                }
+                .navigationTitle("Generated Questions")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") {
+                            showGenerationResult = false
+                        }
+                    }
+                }
+            }
+        }
+        .alert(
+            "Generation failed",
+            isPresented: Binding(
+                get: { generationError != nil },
+                set: { if !$0 { generationError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(generationError ?? "")
         }
     }
     
@@ -181,20 +241,81 @@ struct UploadNotesView: View {
 
     private func fetchCleanOCRInstructions() async throws -> String {
         do {
-            let prompts = try await firestoreManager.fetchPrompts()
-            if let prompt = prompts.first(where: { $0.id == "cleanOCR" }) {
-                return prompt.text
-            }
-            throw CleanOCRPromptError.missingPrompt
+            return try await promptText(for: "cleanOCR")
         } catch {
             print("Failed to fetch prompts: \(error.localizedDescription)")
             throw error
         }
     }
+    
+    private func generateQuestions(for type: QuestionType) async {
+        guard !inputText.isEmpty else { return }
+        
+        await MainActor.run {
+            isGeneratingQuestions = true
+            generationError = nil
+        }
+        
+        do {
+            let systemPrompt = try await promptText(for: "system")
+            let questionPrompt = try await promptText(for: type.promptID)
+            let combinedPrompt = """
+            \(systemPrompt)
+            
+            \(questionPrompt)
+            
+            SOURCE_TEXT:
+            
+            \(inputText)
+            """
+            let response = try await llmService.sendMessage(prompt: combinedPrompt)
+            await MainActor.run {
+                generationResult = response
+                showGenerationResult = true
+            }
+        } catch {
+            await MainActor.run {
+                generationError = error.localizedDescription
+            }
+        }
+        
+        await MainActor.run {
+            isGeneratingQuestions = false
+        }
+    }
+    
+    private func promptText(for id: String) async throws -> String {
+        if let prompt = try await firestoreManager.fetchPrompt(withID: id) {
+            return prompt.text
+        }
+        throw PromptFetchError.missingPrompt(id)
+    }
 }
 
-enum CleanOCRPromptError: Error {
-    case missingPrompt
+enum PromptFetchError: Error {
+    case missingPrompt(String)
+}
+
+enum QuestionType: String, CaseIterable, Identifiable {
+    case cloze = "user_flashcard_cloze"
+    case definition = "user_flashcard_definition"
+    case multipleChoice = "user_flashcard_mcq"
+    case trueFalse = "user_flashcard_true_false"
+    case shortAnswer = "user_flashcard_short_answer"
+    
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .cloze: return "Cloze"
+        case .definition: return "Definition"
+        case .multipleChoice: return "Multiple Choice"
+        case .trueFalse: return "True/False"
+        case .shortAnswer: return "Short Answer"
+        }
+    }
+    
+    var promptID: String { rawValue }
 }
 
 struct DocumentScannerView: UIViewControllerRepresentable {
