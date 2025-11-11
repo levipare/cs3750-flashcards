@@ -22,6 +22,7 @@ struct UploadNotesView: View {
 
     private let ocrManager = OCRManager()
     private let llmService = OpenRouterService(apiKey: Secrets.openRouterAPIKey)
+    private let firestoreManager = FirestoreManager()
     
     var body: some View {
         ZStack {
@@ -166,18 +167,9 @@ struct UploadNotesView: View {
     }
     
     private func cleanOCRText(_ rawText: String) async throws -> String {
+        let instructions = try await fetchCleanOCRInstructions()
         let prompt = """
-        You are a text cleanup assistant. I have extracted text from images using OCR, but it may contain errors, formatting issues, or unclear sections.
-        
-        Please clean up the following text by:
-        1. Fixing obvious OCR errors (misread characters, spacing issues)
-        2. Correcting grammar and punctuation where needed
-        3. Organizing the content into clear paragraphs or bullet points if appropriate
-        4. Removing any duplicate lines or irrelevant artifacts
-        5. Preserving all important information, facts, and technical terms
-        6. Maintaining the original structure and intent of the content
-        
-        Return ONLY the cleaned text, without any commentary or explanations.
+        \(instructions)
         
         OCR Text to clean:
         
@@ -186,6 +178,23 @@ struct UploadNotesView: View {
         
         return try await llmService.sendMessage(prompt: prompt)
     }
+
+    private func fetchCleanOCRInstructions() async throws -> String {
+        do {
+            let prompts = try await firestoreManager.fetchPrompts()
+            if let prompt = prompts.first(where: { $0.id == "cleanOCR" }) {
+                return prompt.text
+            }
+            throw CleanOCRPromptError.missingPrompt
+        } catch {
+            print("Failed to fetch prompts: \(error.localizedDescription)")
+            throw error
+        }
+    }
+}
+
+enum CleanOCRPromptError: Error {
+    case missingPrompt
 }
 
 struct DocumentScannerView: UIViewControllerRepresentable {
