@@ -11,6 +11,7 @@ import Foundation
 class DecksViewModel: ObservableObject {
     @Published var decks: [Deck] = []
     private let db = Firestore.firestore()
+    var userID: String = ""
 
     /// Fetch all decks belonging to a specific user
     func fetchDecks(for ownerID: String) async {
@@ -29,6 +30,11 @@ class DecksViewModel: ObservableObject {
         }
     }
 
+    /// Fetch decks for the current user
+    func fetchDecks() async {
+        await fetchDecks(for: userID)
+    }
+
     /// Add a new deck
     func addDeck(title: String, ownerID: String, cardCount: Int) async {
         do {
@@ -42,6 +48,12 @@ class DecksViewModel: ObservableObject {
         } catch {
             print("Error adding deck: \(error.localizedDescription)")
         }
+    }
+
+    /// Add a new deck and return its ID
+    func addDeck(_ deck: Deck) async throws -> String {
+        let docRef = try db.collection("decks").addDocument(from: deck)
+        return docRef.documentID
     }
 
     /// Delete a deck by ID

@@ -11,6 +11,9 @@ import UIKit
 import VisionKit
 
 struct UploadNotesView: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var decksViewModel: DecksViewModel
+
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @State private var images: [UIImage] = []
     @State private var showScanner = false
@@ -24,6 +27,9 @@ struct UploadNotesView: View {
     @State private var showGenerationResult = false
     @State private var generationResult = ""
     @State private var generationError: String?
+    @State private var parsedCards: [GeneratedCard] = []
+    @State private var showCardPreview = false
+    @State private var shouldDismissAfterSave = false
 
     private let ocrManager = OCRManager()
     private let llmService = OpenRouterService(apiKey: Secrets.openRouterAPIKey)
@@ -168,6 +174,21 @@ struct UploadNotesView: View {
         } message: {
             Text(generationError ?? "")
         }
+        .sheet(isPresented: $showCardPreview) {
+            CardPreviewView(
+                decksViewModel: decksViewModel,
+                generatedCards: parsedCards,
+                onDeckSaved: {
+                    shouldDismissAfterSave = true
+                }
+            )
+        }
+        .onChange(of: showCardPreview) { _, isPresented in
+            if !isPresented && shouldDismissAfterSave {
+                // Sheet was dismissed and deck was saved, go back to DecksView
+                dismiss()
+            }
+        }
     }
     
     private func extractText(from newImages: [UIImage]) async {
@@ -269,9 +290,21 @@ struct UploadNotesView: View {
             \(inputText)
             """
             let response = try await llmService.sendMessage(prompt: combinedPrompt)
-            await MainActor.run {
-                generationResult = response
-                showGenerationResult = true
+
+            // Try to parse JSON response
+            do {
+                let parsed = try parseGeneratedCards(from: response)
+                await MainActor.run {
+                    parsedCards = parsed
+                    showCardPreview = true
+                }
+            } catch {
+                // If parsing fails, show raw response
+                print("JSON parsing failed: \(error.localizedDescription)")
+                await MainActor.run {
+                    generationResult = response
+                    showGenerationResult = true
+                }
             }
         } catch {
             await MainActor.run {
@@ -284,6 +317,33 @@ struct UploadNotesView: View {
         }
     }
     
+    private func parseGeneratedCards(from jsonString: String) throws -> [GeneratedCard] {
+        // Clean the JSON string - remove markdown code blocks if present
+        var cleanedJSON = jsonString.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Remove ```json and ``` markers if present
+        if cleanedJSON.hasPrefix("```json") {
+            cleanedJSON = String(cleanedJSON.dropFirst(7))
+        } else if cleanedJSON.hasPrefix("```") {
+            cleanedJSON = String(cleanedJSON.dropFirst(3))
+        }
+
+        if cleanedJSON.hasSuffix("```") {
+            cleanedJSON = String(cleanedJSON.dropLast(3))
+        }
+
+        cleanedJSON = cleanedJSON.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let data = cleanedJSON.data(using: .utf8) else {
+            throw NSError(domain: "UploadNotesView", code: -1,
+                          userInfo: [NSLocalizedDescriptionKey: "Failed to convert string to data"])
+        }
+
+        let decoder = JSONDecoder()
+        let response = try decoder.decode(GeneratedCardResponse.self, from: data)
+        return response.cards
+    }
+
     private func promptText(for id: String) async throws -> String {
         if let prompt = try await firestoreManager.fetchPrompt(withID: id) {
             return prompt.text

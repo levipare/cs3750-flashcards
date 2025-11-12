@@ -27,9 +27,9 @@ struct DecksView: View {
                 }
             }
             .task {
-                await viewModel.fetchDecks(
-                    for: Auth.auth().currentUser?.uid ?? ""
-                )
+                let userID = Auth.auth().currentUser?.uid ?? ""
+                viewModel.userID = userID
+                await viewModel.fetchDecks(for: userID)
             }
             .navigationTitle("Decks")
             .navigationBarTitleDisplayMode(.inline)
@@ -46,7 +46,7 @@ struct DecksView: View {
                     Menu {
                         NavigationLink(
                             "Generate Deck",
-                            destination: UploadNotesView()
+                            destination: UploadNotesView(decksViewModel: viewModel)
                         )
                         Button("Create Empty Deck") {
                             newDeckTitle = ""
