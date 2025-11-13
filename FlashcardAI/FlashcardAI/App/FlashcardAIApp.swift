@@ -12,7 +12,6 @@ import FirebaseAuth
 @main
 struct FlashcardAIApp: App {
     @StateObject private var authViewModel = AuthViewModel()
-    @StateObject private var settings = Settings()
     
     init() {
         FirebaseApp.configure()
@@ -21,10 +20,10 @@ struct FlashcardAIApp: App {
     var body: some Scene {
         WindowGroup {
             if authViewModel.user != nil {
-                DecksView().environmentObject(authViewModel).environmentObject(settings).environment(\.colorScheme, settings.colorScheme)
+                DecksView()
             } else {
-                AuthView().environmentObject(authViewModel)
+                AuthView()
             }
-        }
+        }.environmentObject(authViewModel)
     }
 }
