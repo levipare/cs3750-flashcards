@@ -12,11 +12,9 @@ class CardsViewModel: ObservableObject {
     @Published var cards: [Card] = []
     private let db = Firestore.firestore()
     private let deckID: String
-    private weak var decksViewModel: DecksViewModel?
 
-    init(deckID: String, decksViewModel: DecksViewModel? = nil) {
+    init(deckID: String) {
         self.deckID = deckID
-        self.decksViewModel = decksViewModel
     }
 
     /// Fetch all cards for a given deck
@@ -47,10 +45,11 @@ class CardsViewModel: ObservableObject {
 
             await fetchCards()
             
-            // Update the deck's card count
-            if let decksViewModel = decksViewModel {
-                await decksViewModel.updateCardCount(deckID: deckID, cardCount: cards.count)
-            }
+            try await db.collection("decks")
+                .document(deckID)
+                .updateData([
+                    "cardCount": cards.count
+                ])
         } catch {
             print("Error adding card: \(error.localizedDescription)")
         }
@@ -67,11 +66,11 @@ class CardsViewModel: ObservableObject {
             await MainActor.run {
                 cards.removeAll { $0.id == cardID }
             }
-            
-            // Update the deck's card count
-            if let decksViewModel = decksViewModel {
-                await decksViewModel.updateCardCount(deckID: deckID, cardCount: cards.count)
-            }
+            try await db.collection("decks")
+                .document(deckID)
+                .updateData([
+                    "cardCount": cards.count
+                ])
         } catch {
             print("Error deleting card: \(error.localizedDescription)")
         }

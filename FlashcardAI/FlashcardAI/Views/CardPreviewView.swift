@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 struct CardPreviewView: View {
     @Environment(\.dismiss) private var dismiss
@@ -153,14 +154,14 @@ struct CardPreviewView: View {
             // Create the deck
             let deck = Deck(
                 title: deckName,
-                ownerID: decksViewModel.userID,
+                ownerID: Auth.auth().currentUser?.uid ?? "",
                 cardCount: editableCards.count
             )
 
             let deckID = try await decksViewModel.addDeck(deck)
 
             // Save all cards to the deck
-            let cardsViewModel = CardsViewModel(deckID: deckID, decksViewModel: decksViewModel)
+            let cardsViewModel = CardsViewModel(deckID: deckID)
 
             for editableCard in editableCards {
                 await cardsViewModel.addCard(front: editableCard.front, back: editableCard.back)

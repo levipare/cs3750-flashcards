@@ -12,12 +12,17 @@ import VisionKit
 
 
 struct DecksView: View {
-    @StateObject private var viewModel = DecksViewModel()
+    @StateObject private var viewModel: DecksViewModel
     @State private var showConfirmation = false
     @State private var showShareCodeAlert = false
     @State private var shareCode = ""
     @State private var showNewDeckAlert = false
     @State private var newDeckTitle = ""
+    
+    init() {
+        let userID = Auth.auth().currentUser?.uid ?? ""
+        self._viewModel = StateObject(wrappedValue: DecksViewModel(ownerID: userID))
+    }
 
     var body: some View {
         NavigationStack {
@@ -27,9 +32,7 @@ struct DecksView: View {
                 }
             }
             .task {
-                let userID = Auth.auth().currentUser?.uid ?? ""
-                viewModel.userID = userID
-                await viewModel.fetchDecks(for: userID)
+                await viewModel.fetchDecks()
             }
             .navigationTitle("Decks")
             .navigationBarTitleDisplayMode(.inline)
@@ -73,7 +76,6 @@ struct DecksView: View {
                     Task {
                         await viewModel.addDeck(
                             title: newDeckTitle,
-                            ownerID: Auth.auth().currentUser?.uid ?? "",
                             cardCount: 0
                         )
                     }
