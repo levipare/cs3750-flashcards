@@ -1,5 +1,3 @@
 # cs3750-flashcards
 
-# undo test
-
-# River is a loser
+Generate flashcards from your notes.
