@@ -23,6 +23,7 @@ class CardsViewModel: ObservableObject {
             let snapshot = try await db.collection("decks")
                 .document(deckID)
                 .collection("cards")
+                .order(by: "index")
                 .getDocuments()
             try await MainActor.run {
                 self.cards = try snapshot.documents.compactMap { doc in
@@ -37,7 +38,7 @@ class CardsViewModel: ObservableObject {
     /// Add a new card to a deck
     func addCard(front: String, back: String) async {
         do {
-            let card = Card(front: front, back: back)
+            let card = Card(index: cards.count, front: front, back: back)
             _ = try db.collection("decks")
                 .document(deckID)
                 .collection("cards")
@@ -97,4 +98,31 @@ class CardsViewModel: ObservableObject {
             print("Error updating card: \(error.localizedDescription)")
         }
     }
+    
+    /// Move a card
+    func moveCard(from source: IndexSet, to destination: Int) async {
+        await MainActor.run {
+            cards.move(fromOffsets: source, toOffset: destination)
+        }
+
+        do {
+            let batch = db.batch()
+
+            for (newIndex, card) in cards.enumerated() {
+                guard let docID = card.id else { continue }
+                let ref = db.collection("decks")
+                    .document(deckID)
+                    .collection("cards")
+                    .document(docID)
+
+                batch.updateData(["index": newIndex], forDocument: ref)
+            }
+
+            try await batch.commit()
+
+        } catch {
+            print("Error reordering cards: \(error.localizedDescription)")
+        }
+    }
+
 }

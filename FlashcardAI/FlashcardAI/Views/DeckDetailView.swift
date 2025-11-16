@@ -33,6 +33,10 @@ struct DeckDetailView: View {
         List {
             ForEach(viewModel.cards) { card in
                 cardRow(card: card)
+            }.onMove { indices, newOffset in
+                Task {
+                    await viewModel.moveCard(from: indices, to: newOffset)
+                }
             }
         }
         .task {
