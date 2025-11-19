@@ -22,7 +22,7 @@ struct FlashcardAIApp: App {
             if authViewModel.user != nil {
                 DecksView()
             } else {
-                AuthView()
+                SignUpView()
             }
         }.environmentObject(authViewModel)
     }

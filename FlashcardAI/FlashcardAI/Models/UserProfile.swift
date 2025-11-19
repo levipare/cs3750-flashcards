@@ -33,7 +33,6 @@ struct UserProfile: Identifiable, Codable {
         self.displayName = displayName
         self.createdAt = createdAt
         self.lastLogin = lastLogin
-        self.photoURL = photoURL
         self.role = role
         self.deckCount = deckCount
     }

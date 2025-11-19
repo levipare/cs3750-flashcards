@@ -52,7 +52,9 @@ class AuthViewModel: ObservableObject {
 
     func signIn(email: String, password: String) async throws {
         let result = try await Auth.auth().signIn(withEmail: email, password: password)
-        self.user = result.user
+        await MainActor.run {
+            self.user = result.user
+        }
         await fetchUserProfile(for: result.user.uid)
 
         // Update last login timestamp
@@ -86,7 +88,10 @@ class AuthViewModel: ObservableObject {
         }
     }
 
-    private func fetchUserProfile(for uid: String) async {
+    func fetchUserProfile(for uid: String) async {
+        if uid.isEmpty {
+            return
+        }
         do {
             let snapshot = try await db.collection("users").document(uid).getDocument()
             try await MainActor.run {
