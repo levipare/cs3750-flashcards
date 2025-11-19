@@ -61,7 +61,9 @@ struct DeckDetailView: View {
             }
             ToolbarItemGroup(placement: .bottomBar) {
                 Spacer()
-                NavigationLink("Study", destination: {})
+                NavigationLink("Study", destination: {
+                    StudyView(cards: viewModel.cards)
+                })
                     .buttonStyle(.borderedProminent)
                     .disabled(viewModel.cards.isEmpty)
                 Spacer()
