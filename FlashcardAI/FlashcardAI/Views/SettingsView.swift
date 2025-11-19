@@ -5,62 +5,66 @@
 //  Created by Levi Pare on 10/16/25.
 //
 
+import FirebaseAuth
 import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @EnvironmentObject var settings: Settings
 
     var body: some View {
-        NavigationStack{
+        VStack {
             VStack {
-                Spacer().frame(height: 40)
-                
-                
-                Toggle(isOn: $settings.darkModeToggleState) {
-                    Text("Dark Mode")
-                        .font(.headline)
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 20)
-                
-                
-                NavigationLink(destination: AccountView().environmentObject(authViewModel)){
-                    HStack {
-                        Text("Account Info")
-                            .foregroundColor(.primary)
-                            .font(.headline)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(.primary)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .cornerRadius(8)
-                    .contentShape(Rectangle())
-                }.buttonStyle(PlainButtonStyle())
-                
-                Spacer()
-                
-                Button {
-                    authViewModel.signOut()
-                } label: {
-                    Text("Sign Out")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .foregroundColor(.white)
-                        .background(Color.red)
-                        .cornerRadius(10)
-                        .padding(.horizontal)
-                }
-                
-                Spacer().frame(height: 50)
-            }
-            .background(Color(.systemBackground))
-            .navigationTitle("Settings")
+                HStack {
+                    Text("Display name:").font(.system(size: 16))
+                    Spacer()
+                }.padding(.horizontal)
+                HStack {
+                    Text(authViewModel.userProfile?.displayName ?? "").font(
+                        .system(size: 32)
+                    )
+                    Spacer()
+                    //                Image(systemName: "pencil")
+                    //                    .foregroundColor(.primary)
+                    //                    .font(.system(size: 36))
+                }.padding(.horizontal)
+                    .padding(.bottom)
 
+                HStack {
+                    Text("Current email:").font(.system(size: 16))
+                    Spacer()
+                }.padding(.horizontal)
+                HStack {
+                    Text(authViewModel.userProfile?.email ?? "").font(
+                        .system(size: 24)
+                    )
+                    Spacer()
+                    //                Image(systemName: "pencil")
+                    //                    .foregroundColor(.primary)
+                    //                    .font(.system(size: 36))
+                }.padding(.horizontal)
+
+                Spacer()
+
+            }.task {
+                await authViewModel.fetchUserProfile(
+                    for: Auth.auth().currentUser?.uid ?? ""
+                )
+            }
+            .padding()
+
+            Spacer()
+
+            Button {
+                authViewModel.signOut()
+            } label: {
+                Text("Sign Out").frame(maxWidth: .infinity)
+            }
+            .controlSize(.large)
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .padding()
         }
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
-

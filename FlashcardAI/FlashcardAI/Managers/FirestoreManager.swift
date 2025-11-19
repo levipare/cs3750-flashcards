@@ -25,4 +25,9 @@ class FirestoreManager {
         let snapshot = try await db.collection("decks/\(deckID)/cards").getDocuments()
         return try snapshot.documents.compactMap { try $0.data(as: Card.self) }
     }
+    
+    func fetchPrompt(withID id: String) async throws -> Prompt? {
+        let doc = try await db.collection("prompts").document(id).getDocument()
+        return try doc.data(as: Prompt.self)
+    }
 }

@@ -24,3 +24,5 @@ fastlane/test_output/
 
 # General
 .DS_Store
+
+FlashcardAI/Secrets.swift

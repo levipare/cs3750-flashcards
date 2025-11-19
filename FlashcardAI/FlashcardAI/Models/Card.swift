@@ -9,6 +9,7 @@ import FirebaseFirestore
 
 struct Card: Identifiable, Codable {
     @DocumentID var id: String?
+    var index: Int = 0
     var front: String
     var back: String
 }

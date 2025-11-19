@@ -19,13 +19,11 @@ struct FlashcardAIApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if let _ = authViewModel.user {
-                RootTabView()
-                    .environmentObject(authViewModel)
+            if authViewModel.user != nil {
+                DecksView()
             } else {
                 SignUpView()
-                    .environmentObject(authViewModel)
             }
-        }
+        }.environmentObject(authViewModel)
     }
 }
