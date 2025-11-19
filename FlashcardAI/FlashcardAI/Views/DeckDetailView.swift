@@ -72,7 +72,9 @@ struct DeckDetailView: View {
                     Image(systemName: "person.2.circle")
                 }
                 Spacer()
-                NavigationLink("Study", destination: {})
+                NavigationLink("Study", destination: {
+                    StudyView(cards: viewModel.cards)
+                })
                     .buttonStyle(.borderedProminent)
                     .disabled(viewModel.cards.isEmpty)
                 Spacer()
