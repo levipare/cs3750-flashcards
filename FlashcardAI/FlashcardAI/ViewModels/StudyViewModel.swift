@@ -11,19 +11,12 @@ class StudyViewModel: ObservableObject {
     @Published var currentIndex: Int = 0
     @Published var isShowingBack: Bool = false
     @Published var cards: [Card]
-    @Published var isShuffled: Bool = false
 
     private let originalCards: [Card]
 
-    init(cards: [Card], shuffled: Bool = false) {
+    init(cards: [Card]) {
         self.originalCards = cards
-        self.isShuffled = shuffled
-
-        if shuffled {
-            self.cards = cards.shuffled()
-        } else {
-            self.cards = cards
-        }
+        self.cards = cards
     }
 
     // MARK: - Computed Properties
@@ -73,26 +66,9 @@ class StudyViewModel: ObservableObject {
         isShowingBack = false
     }
 
-    func toggleShuffle() {
-        isShuffled.toggle()
-
-        // Remember current card to maintain position if possible
-        let currentCardID = currentCard?.id
-
-        if isShuffled {
-            cards = originalCards.shuffled()
-        } else {
-            cards = originalCards
-        }
-
-        // Try to find the same card in the new order
-        if let cardID = currentCardID,
-           let newIndex = cards.firstIndex(where: { $0.id == cardID }) {
-            currentIndex = newIndex
-        } else {
-            currentIndex = 0
-        }
-
+    func shuffle() {
+        cards = originalCards.shuffled()
+        currentIndex = 0
         isShowingBack = false
     }
 

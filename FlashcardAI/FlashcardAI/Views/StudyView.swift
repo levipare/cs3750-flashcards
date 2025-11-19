@@ -10,9 +10,10 @@ import SwiftUI
 struct StudyView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel: StudyViewModel
+    @State private var isShuffleButtonPressed = false
 
-    init(cards: [Card], shuffled: Bool = false) {
-        _viewModel = StateObject(wrappedValue: StudyViewModel(cards: cards, shuffled: shuffled))
+    init(cards: [Card]) {
+        _viewModel = StateObject(wrappedValue: StudyViewModel(cards: cards))
     }
 
     var body: some View {
@@ -46,15 +47,21 @@ struct StudyView: View {
 
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    viewModel.toggleShuffle()
+                    isShuffleButtonPressed = true
+                    viewModel.shuffle()
+
+                    Task {
+                        try? await Task.sleep(nanoseconds: 150_000_0)
+                        isShuffleButtonPressed = false
+                    }
                 } label: {
-                    Image(systemName: viewModel.isShuffled ? "shuffle" : "arrow.up.arrow.down")
+                    Image(systemName: "shuffle")
                 }
+                .opacity(isShuffleButtonPressed ? 0.3 : 1.0)
+                .animation(.easeInOut(duration: 0.05), value: isShuffleButtonPressed)
             }
         }
     }
-
-    // MARK: - Top Toolbar
 
     private var topToolbar: some View {
         VStack(spacing: 8) {
@@ -68,8 +75,6 @@ struct StudyView: View {
         .padding()
         .background(Color(.systemGroupedBackground))
     }
-
-    // MARK: - Card View
 
     private func cardView(card: Card) -> some View {
         ZStack {
@@ -101,8 +106,6 @@ struct StudyView: View {
             }
         }
     }
-
-    // MARK: - Bottom Navigation
 
     private var bottomNavigationBar: some View {
         HStack(spacing: 20) {
@@ -145,8 +148,6 @@ struct StudyView: View {
         .background(Color(.systemGroupedBackground))
     }
 
-    // MARK: - Empty State
-
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Image(systemName: "rectangle.on.rectangle.slash")
@@ -159,8 +160,6 @@ struct StudyView: View {
         }
     }
 }
-
-// MARK: - Card Side Component
 
 struct CardSide: View {
     let text: String
