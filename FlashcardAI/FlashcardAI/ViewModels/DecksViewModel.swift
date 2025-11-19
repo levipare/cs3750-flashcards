@@ -142,23 +142,17 @@ class DecksViewModel: ObservableObject {
         }
     }
 
-    /// Fetch the share code for a deck, loading from Firestore if it is not already cached.
+    /// Fetch the share code for a deck from the in-memory cache of decks.
     func fetchShareCode(for deckID: String?) async throws -> String {
         guard let deckID else {
             throw DeckShareError.missingDeckID
         }
 
-        if let deck = decks.first(where: { $0.id == deckID }),
-           !deck.shareCode.isEmpty {
-            return deck.shareCode
-        }
-
-        let document = try await db.collection("decks").document(deckID).getDocument()
-        guard document.exists else {
+        guard let deck = decks.first(where: { $0.id == deckID }),
+              !deck.shareCode.isEmpty else {
             throw DeckShareError.deckNotFound
         }
 
-        let deck = try document.data(as: Deck.self)
         return deck.shareCode
     }
 
