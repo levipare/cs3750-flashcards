@@ -186,7 +186,7 @@ class DecksViewModel: ObservableObject {
             .getDocuments()
         let cards = try cardsSnapshot.documents.compactMap { try $0.data(as: Card.self) }
 
-        var newDeck = Deck(
+        let newDeck = Deck(
             title: sharedDeck.title,
             ownerID: ownerID,
             cardCount: cards.count
