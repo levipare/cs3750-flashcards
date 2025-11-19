@@ -7,6 +7,7 @@
 
 import FirebaseFirestore
 import SwiftUI
+import UIKit
 
 struct DeckDetailView: View {
     @ObservedObject var decksViewModel: DecksViewModel
@@ -19,6 +20,9 @@ struct DeckDetailView: View {
     @State private var editBackText = ""
     @State private var title: String
     @State private var showConfirmation = false
+    @State private var showShareCodeAlert = false
+    @State private var shareCodeToShow = ""
+    @State private var shareCodeErrorMessage: String?
 
     let deck: Deck
 
@@ -60,6 +64,13 @@ struct DeckDetailView: View {
                 Text("\(viewModel.cards.count) \(viewModel.cards.count == 1 ? "card" : "cards")")
             }
             ToolbarItemGroup(placement: .bottomBar) {
+                Button {
+                    Task {
+                        await fetchShareCode()
+                    }
+                } label: {
+                    Image(systemName: "person.2.circle")
+                }
                 Spacer()
                 NavigationLink("Study", destination: {})
                     .buttonStyle(.borderedProminent)
@@ -76,6 +87,39 @@ struct DeckDetailView: View {
         }
         .sheet(isPresented: $showingNewCardSheet) {
             newCardSheet()
+        }
+        .alert("Share this deck", isPresented: $showShareCodeAlert) {
+            Button("Copy") {
+                UIPasteboard.general.string = shareCodeToShow
+            }
+            Button("Done", role: .cancel) {}
+        } message: {
+            Text(shareCodeToShow)
+        }
+        .alert(
+            "Couldn't fetch share code",
+            isPresented: Binding(
+                get: { shareCodeErrorMessage != nil },
+                set: { if !$0 { shareCodeErrorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(shareCodeErrorMessage ?? "")
+        }
+    }
+    
+    private func fetchShareCode() async {
+        do {
+            let code = try await decksViewModel.fetchShareCode(for: deck.id)
+            await MainActor.run {
+                shareCodeToShow = code
+                showShareCodeAlert = true
+            }
+        } catch {
+            await MainActor.run {
+                shareCodeErrorMessage = error.localizedDescription
+            }
         }
     }
     

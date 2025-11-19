@@ -18,6 +18,7 @@ struct DecksView: View {
     @State private var shareCode = ""
     @State private var showNewDeckAlert = false
     @State private var newDeckTitle = ""
+    @State private var shareCodeErrorMessage: String?
     
     init() {
         let userID = Auth.auth().currentUser?.uid ?? ""
@@ -84,8 +85,24 @@ struct DecksView: View {
             }
             .alert("Enter a share code.", isPresented: $showShareCodeAlert) {
                 TextField("Code", text: $shareCode)
-                Button("Add", action: {})
-                Button("Cancel", role: .cancel, action: {})
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                Button("Add", action: submitShareCode)
+                    .disabled(shareCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                Button("Cancel", role: .cancel, action: {
+                    shareCode = ""
+                })
+            }
+            .alert(
+                "Unable to add deck",
+                isPresented: Binding(
+                    get: { shareCodeErrorMessage != nil },
+                    set: { if !$0 { shareCodeErrorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel, action: {})
+            } message: {
+                Text(shareCodeErrorMessage ?? "")
             }
         }
     }
@@ -122,6 +139,22 @@ struct DecksView: View {
             Button("Delete Deck", role: .destructive) {
                 Task {
                     await viewModel.deleteDeck(deckID: deck.id ?? "")
+                }
+            }
+        }
+    }
+    
+    private func submitShareCode() {
+        let code = shareCode
+        shareCode = ""
+        showShareCodeAlert = false
+        
+        Task {
+            do {
+                try await viewModel.importDeck(shareCode: code)
+            } catch {
+                await MainActor.run {
+                    shareCodeErrorMessage = error.localizedDescription
                 }
             }
         }

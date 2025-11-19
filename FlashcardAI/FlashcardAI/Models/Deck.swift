@@ -12,4 +12,5 @@ struct Deck: Identifiable, Codable {
     var title: String
     var ownerID: String
     var cardCount: Int
+    var shareCode: String = ""
 }
