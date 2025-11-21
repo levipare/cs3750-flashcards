@@ -2,7 +2,7 @@
 //  GeneratedCard.swift
 //  FlashcardAI
 //
-//  Model for parsing AI-generated flashcard JSON responses
+//  Created by Surya Malik on 11/12/25.
 //
 
 import Foundation
