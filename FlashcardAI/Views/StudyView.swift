@@ -2,7 +2,7 @@
 //  StudyView.swift
 //  FlashcardAI
 //
-//  Study interface with card flipping and navigation
+//  Created by Surya Malik on 11/12/25.
 //
 
 import SwiftUI
