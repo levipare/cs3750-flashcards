@@ -2,7 +2,7 @@
 //  StudyViewModel.swift
 //  FlashcardAI
 //
-//  Manages study session state and card navigation
+//  Created by Surya Malik on 11/12/25.
 //
 
 import Foundation
